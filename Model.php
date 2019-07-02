@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Mysqli Model wrapper
  *
@@ -177,7 +178,7 @@ class Model implements ArrayAccess
 
         if (property_exists($this, 'relations') && isset($this->relations[$name])) {
             $relationType = strtolower($this->relations[$name][0]);
-            $modelName = $this->relations[$name][1];
+            $modelName = ucfirst($this->relations[$name][1]);
             switch ($relationType) {
                 case 'hasone':
                     $key = isset($this->relations[$name][2]) ? $this->relations[$name][2] : $name;
@@ -339,7 +340,7 @@ class Model implements ArrayAccess
         if (!empty($this->data[$this->primaryKey])) {
             $this->db->where($this->primaryKey, $this->data[$this->primaryKey]);
         }
-        $result = $this->db->update($this->dbTable.$this->processAlias(), $sqlData, $numRows);
+        $result = $this->db->update($this->dbTable . $this->processAlias(), $sqlData, $numRows);
 
         if ($this->db->getLastErrno() !== 0) {
             throw new Exception($this->db->getLastError(), $this->db->getLastErrno());
@@ -402,7 +403,7 @@ class Model implements ArrayAccess
     protected function getOne($fields = null)
     {
         $this->processHasOneWith();
-        $results = $this->db->ArrayBuilder()->getOne($this->dbTable.$this->processAlias(), $this->processField($fields));
+        $results = $this->db->ArrayBuilder()->getOne($this->dbTable . $this->processAlias(), $this->processField($fields));
         if ($this->db->count == 0)
             return null;
 
@@ -434,7 +435,7 @@ class Model implements ArrayAccess
     {
         $objects = array();
         $this->processHasOneWith();
-        $results = $this->db->ArrayBuilder()->get($this->dbTable.$this->processAlias(), $this->processLimit($limit), $this->processField($fields));
+        $results = $this->db->ArrayBuilder()->get($this->dbTable . $this->processAlias(), $this->processLimit($limit), $this->processField($fields));
         if ($this->db->count == 0)
             return null;
 
@@ -482,6 +483,10 @@ class Model implements ArrayAccess
             $this->_with[$objectName][5] = $alias;
         }
 
+        if (empty($this->_alias) && !empty($this->dbTable)) {
+            $this->alias($this->dbTable);
+        }
+
         return $this;
     }
 
@@ -498,6 +503,7 @@ class Model implements ArrayAccess
      */
     private function withJoin($objectName, $key = null, $joinType = 'LEFT', $primaryKey = null, $alias = '')
     {
+        $objectName = ucfirst($objectName);
         $joinObj = new $objectName;
         if (!$key)
             $key = $objectName . "id";
@@ -520,7 +526,7 @@ class Model implements ArrayAccess
             $joinStr = MysqliDb::$prefix . "{$key} = " . $primaryKey;
         }
 
-        $this->db->join($joinObj->dbTable.' '.$alias, $joinStr, $joinType);
+        $this->db->join($joinObj->dbTable . ' ' . $alias, $joinStr, $joinType);
         return $this;
     }
 
@@ -532,7 +538,7 @@ class Model implements ArrayAccess
     protected function count($field = '*')
     {
         $this->processHasOneWith();
-        $res = $this->db->ArrayBuilder()->getValue($this->dbTable.$this->processAlias(), "count({$field})");
+        $res = $this->db->ArrayBuilder()->getValue($this->dbTable . $this->processAlias(), "count({$field})");
         if (!$res)
             return 0;
         return $res;
@@ -546,7 +552,7 @@ class Model implements ArrayAccess
     protected function sum($field)
     {
         $this->processHasOneWith();
-        $res = $this->db->ArrayBuilder()->getValue($this->dbTable.$this->processAlias(), "sum({$field})");
+        $res = $this->db->ArrayBuilder()->getValue($this->dbTable . $this->processAlias(), "sum({$field})");
         if (!$res)
             return 0;
         return $res;
@@ -563,7 +569,7 @@ class Model implements ArrayAccess
     private function paginate($page, $fields = null)
     {
         $this->db->pageLimit = self::$pageLimit;
-        $res = $this->db->paginate($this->dbTable.$this->processAlias(), $page, $fields);
+        $res = $this->db->paginate($this->dbTable . $this->processAlias(), $page, $fields);
         self::$totalPages = $this->db->totalPages;
         if ($this->db->count == 0) return null;
 
@@ -673,7 +679,7 @@ class Model implements ArrayAccess
 
         foreach ($this->_with as $name => $opts) {
             $relationType = strtolower($opts[0]);
-            $modelName = $opts[1];
+            $modelName = ucfirst($opts[1]);
             if ($relationType == 'hasone') {
                 $obj = new $modelName;
                 $table = isset($opts[5]) && $opts[5] ? $opts[5] : $obj->dbTable;
@@ -686,14 +692,14 @@ class Model implements ArrayAccess
                 // if ($data[$table][$primaryKey] === null) {
                 //     $data[$name] = null;
                 // } else {
-                    if ($this->returnType == 'Object') {
-                        $item = new $modelName($data[$table]);
-                        $item->returnType = $this->returnType;
-                        $item->isNew = false;
-                        $data[$name] = $item;
-                    } else {
-                        $data[$name] = $data[$table];
-                    }
+                if ($this->returnType == 'Object') {
+                    $item = new $modelName($data[$table]);
+                    $item->returnType = $this->returnType;
+                    $item->isNew = false;
+                    $data[$name] = $item;
+                } else {
+                    $data[$name] = $data[$table];
+                }
                 //}
                 if ($table != $name) {
                     unset($data[$table]);
@@ -719,7 +725,7 @@ class Model implements ArrayAccess
             $joinType = 'LEFT';
             $primaryKey = null;
             $alias = '';
-            
+
             if (isset($opts[2])) {
                 $key = $opts[2];
             }
@@ -873,7 +879,7 @@ class Model implements ArrayAccess
      */
     public function getValue($column = null, $limit = 1)
     {
-        $res = $this->ArrayBuilder()->get($limit, $this->processField($column)." AS retval");
+        $res = $this->ArrayBuilder()->get($limit, $this->processField($column) . " AS retval");
 
         if (!$res) {
             return null;
@@ -1012,7 +1018,7 @@ class Model implements ArrayAccess
 
     protected function processAlias()
     {
-        $alias = !empty($this->_alias) ? ' '.$this->_alias : '';
+        $alias = !empty($this->_alias) ? ' ' . $this->_alias : '';
         $this->_alias = '';
         return $alias;
     }
@@ -1025,7 +1031,7 @@ class Model implements ArrayAccess
         $this->fields = null;
         return $fields;
     }
-    
+
     protected function processLimit($limit = null)
     {
         if (is_null($limit) && !is_null($this->limit)) {
@@ -1077,6 +1083,9 @@ class Model implements ArrayAccess
                 $this->db->orderBy(...$vo);
             }
         } else {
+            if (strpos($orderByField, ' ')) {
+                list($orderByField, $orderbyDirection) = explode(' ', $orderByField);
+            }
             $this->db->orderBy($orderByField, $orderbyDirection, $customFieldsOrRegExp);
         }
         return $this;
@@ -1175,5 +1184,13 @@ class Model implements ArrayAccess
             $listRows = 10;
         }
         return $this->limit(($page - 1) * $listRows, $listRows);
+    }
+
+    public function getData($field = null)
+    {
+        if (is_null($field)) {
+            return $this->data;
+        }
+        return isset($this->data[$field]) ? $this->data[$field] : null;
     }
 }
