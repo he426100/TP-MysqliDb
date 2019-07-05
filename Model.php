@@ -1212,7 +1212,7 @@ class Model implements ArrayAccess
         return isset($this->data[$field]) ? $this->data[$field] : null;
     }
 
-    public function join($joinTable, $joinCondition, $joinType = '')
+    public function join($joinTable, $joinCondition = '', $joinType = '')
     {
         if (empty($joinTable)) {
             return $this;
