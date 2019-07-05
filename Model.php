@@ -880,6 +880,7 @@ class Model implements ArrayAccess
     public function getValue($column = null, $limit = 1)
     {
         $res = $this->ArrayBuilder()->get($limit, $this->processField($column) . " AS retval");
+        unset($this->data['retval']); //去除保存在data中的retval
 
         if (!$res) {
             return null;
@@ -1070,14 +1071,31 @@ class Model implements ArrayAccess
         $this->isNew = !$update;
     }
 
+    public function groupBy($groupByField)
+    {
+        if (empty($groupByField)) {
+            return $this;
+        }
+        if (is_array($groupByField)) {
+            foreach ($groupByField as $vo) {
+                $this->db->groupBy(...$vo);
+            }
+        } else {
+            $this->db->groupBy($groupByField);
+        }
+        return $this;
+    }
+
     public function group($groupByField)
     {
-        $this->db->groupBy($groupByField);
-        return $this;
+        return $this->groupBy($groupByField);
     }
 
     public function order($orderByField, $orderbyDirection = "DESC", $customFieldsOrRegExp = null)
     {
+        if (empty($orderByField)) {
+            return $this;
+        }
         if (is_array($orderByField)) {
             foreach ($orderByField as $vo) {
                 $this->db->orderBy(...$vo);
@@ -1192,5 +1210,20 @@ class Model implements ArrayAccess
             return $this->data;
         }
         return isset($this->data[$field]) ? $this->data[$field] : null;
+    }
+
+    public function join($joinTable, $joinCondition, $joinType = '')
+    {
+        if (empty($joinTable)) {
+            return $this;
+        }
+        if (is_array($joinTable)) {
+            foreach ($joinTable as $vo) {
+                $this->db->join(...$vo);
+            }
+        } else {
+            $this->db->join($joinTable, $joinCondition, $joinType);
+        }
+        return $this;
     }
 }
