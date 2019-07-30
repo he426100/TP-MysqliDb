@@ -96,6 +96,11 @@ class Model implements ArrayAccess
      */
     public $errors = null;
     /**
+     * 错误信息
+     * @var mixed
+     */
+    protected $error;
+    /**
      * Primary key for an object. 'id' is a default value.
      *
      * @var stating
@@ -1225,5 +1230,18 @@ class Model implements ArrayAccess
             $this->db->join($joinTable, $joinCondition, $joinType);
         }
         return $this;
+    }
+
+    public function distinct($distinct = true)
+    {
+        if ($distinct === true) {
+            $this->db->setQueryOption('DISTINCT');
+        }
+        return $this;
+    }
+
+    public function getError()
+    {
+        return $this->error;
     }
 }
